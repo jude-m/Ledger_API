@@ -6,8 +6,8 @@ const app = express();
 app.use(express.json());
 
 app.get('/api/ledger', (req, res) => {
-    // const result = validateQueryString(req.query);
-    // if (result.error) return res.status(400).send(result.error)
+    const result = validateQueryString(req.query);
+    if (result.error) return res.status(400).send(result.error)
 
     const leaseStartDate = new Date(req.query.start_date);
     const leaseEndDate = new Date(req.query.end_date);
@@ -33,7 +33,7 @@ app.get('/api/ledger', (req, res) => {
         nextLineItemEndDate = addDays(nextLineItemStartDate, frequencyInDays);
     }
 
-    //Handling the last line item which is less
+    //Handling the last line item which falls beyond the given frequency interval.
     let dateDiff = dateDiffInDays(leaseEndDate.getTime(), nextLineItemStartDate.getTime());
     line_item.push(nextLineItemStartDate.toDateString());
     line_item.push(addDays(nextLineItemStartDate, dateDiff).toDateString());
