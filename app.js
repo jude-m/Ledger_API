@@ -6,7 +6,8 @@ const {
     WEEKLY,
     FORTNIGHTLY,
     MONTHLY,
-    MILI_SECONDS_PER_DAY
+    MILI_SECONDS_PER_DAY,
+    DAILY
 } = require('./constants');
 const app = express();
 
@@ -25,19 +26,11 @@ app.get('/api/ledger', (req, res) => {
     } = req.query;
 
     let fullSeries = [];
-    let frequencyInDays = frequency === WEEKLY ? 7 : frequency === FORTNIGHTLY ? 13 : -1;
-
     let nextStartDate = leaseStartDate;
-    let nextEndDate = frequency === MONTHLY ? addMonthMinusOneDate(nextStartDate) : addDays(nextStartDate, frequencyInDays);
+    let nextEndDate = getNextEndDate(nextStartDate, frequency);
     let lineItem = [];
 
     while (leaseEndDate.getTime() > nextEndDate.getTime()) {
-
-        // if (frequency === MONTHLY && nextLineItemStartDate.getMonth() !== nextLineItemEndDate.getMonth()) {
-        //     //nextLineItemEndDate = new Date(nextLineItemEndDate.getFullYear(), nextLineItemEndDate.getMonth(), 0);
-        //     nextLineItemEndDate = addMonth(nextLineItemStartDate);
-        // }
-
         lineItem = [nextStartDate.toDateString(), nextEndDate.toDateString(), getNextAmount(weeklyRent, frequency), ];
 
         fullSeries.push(lineItem);
@@ -45,27 +38,16 @@ app.get('/api/ledger', (req, res) => {
 
         nextStartDate = getNextStartDate(nextStartDate, frequency);
         nextEndDate = getNextEndDate(nextStartDate, frequency);
-        // if (frequency === MONTHLY) {
-        //     nextStartDate = getNextStartDate(nextStartDate);
-        //     nextEndDate = getNextEndDate(nextStartDate);
-        // } else {
-        //     nextStartDate = getNextStartDate(nextEndDate, 1);
-        //     nextEndDate = addDays(nextStartDate, frequencyInDays);
-        // }
     }
 
     //Handling the last line item which falls beyond the given frequency interval.
     let dateDiff = getDateDiffInDays(leaseEndDate.getTime(), nextStartDate.getTime());
-
     nextEndDate = addDays(nextStartDate, dateDiff);
-    lineItem.push(nextStartDate.toDateString());
-    lineItem.push(nextEndDate.toDateString());
-    lineItem.push(getRentPerNumberOfDays(weeklyRent, dateDiff));
 
+    lineItem = [nextStartDate.toDateString(), nextEndDate.toDateString(), getNextAmount(weeklyRent, DAILY, dateDiff + 1)]; //send freq = DAILY
 
     fullSeries.push(lineItem);
     res.send([fullSeries]);
-
 })
 
 function getNextStartDate(nextStartDate, frequency) {
@@ -77,8 +59,10 @@ function getNextStartDate(nextStartDate, frequency) {
             break;
         case FORTNIGHTLY:
             result = addDays(result, 14);
+            break;
         case MONTHLY:
             result = addMonth(result);
+            break;
         default:
     }
     return result;
@@ -94,15 +78,17 @@ function getNextEndDate(nextStartDate, frequency) {
             break;
         case FORTNIGHTLY:
             result = addDays(result, 14);
+            break;
         case MONTHLY:
             result = addMonth(result);
+            break;
         default:
     }
     result.setDate(result.getDate() - 1);
     return result;
 }
 
-function getNextAmount(weeklyRent, frequency) {
+function getNextAmount(weeklyRent, frequency, numberOfDays) {
     let lineAmount;
 
     switch (frequency) {
@@ -111,40 +97,25 @@ function getNextAmount(weeklyRent, frequency) {
             break;
         case FORTNIGHTLY:
             lineAmount = weeklyRent * 2;
+            break;
         case MONTHLY:
-            lineAmount = (weeklyRent / 7) * (365 / 12);
-        default:
+            lineAmount = ((weeklyRent / 7) * (365 / 12));
+            break;
+        case DAILY:
+            lineAmount = ((weeklyRent / 7) * numberOfDays);
+            break;
     }
     return lineAmount.toFixed(2);
 }
 
 function addMonth(date) {
     let result = new Date(date);
-
     result.setMonth(result.getMonth() + 1);
 
     // if (result.getDate() != date.getDate()) {
     //     result.setDate(0);
     // }
-
-
     return result;
-}
-
-function addMonthMinusOneDate(date) {
-    let result = new Date(date);
-
-    result.setMonth(result.getMonth() + 1);
-
-    result.setDate(result.getDate() - 1);
-
-    return result;
-}
-
-
-
-function getRentPerNumberOfDays(weeklyRent, numberOfdays) {
-    return ((weeklyRent / 7) * numberOfdays);
 }
 
 function addDays(date, days) {
@@ -154,7 +125,7 @@ function addDays(date, days) {
 }
 
 function getDateDiffInDays(date1, date2) {
-    return Math.floor((date1 - date2) / MILI_SECONDS_PER_DAY);
+    return Math.ceil((date1 - date2) / MILI_SECONDS_PER_DAY);
 }
 
 function validateQueryString(query) {
