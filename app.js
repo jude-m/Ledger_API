@@ -1,6 +1,13 @@
+"use strict";
+
 const Joi = require('joi');
 const express = require('express');
-const { WEEKLY, FORTNIGHTLY, MONTHLY, MILI_SECONDS_PER_DAY } = require('./constants');
+const {
+    WEEKLY,
+    FORTNIGHTLY,
+    MONTHLY,
+    MILI_SECONDS_PER_DAY
+} = require('./constants');
 const app = express();
 
 app.use(express.json());
@@ -11,42 +18,133 @@ app.get('/api/ledger', (req, res) => {
 
     const leaseStartDate = new Date(req.query.start_date);
     const leaseEndDate = new Date(req.query.end_date);
-    const { frequency, weekly_rent:weeklyRent, timezone } = req.query;
+    const {
+        frequency,
+        weekly_rent: weeklyRent,
+        timezone
+    } = req.query;
 
     let fullSeries = [];
-    let frequencyInDays = frequency === WEEKLY ? 7 : frequency === FORTNIGHTLY ? 13 : 30;
-    let rentMulti = frequency === WEEKLY ? 1 : frequency === FORTNIGHTLY ? 2 : 4;
+    let frequencyInDays = frequency === WEEKLY ? 7 : frequency === FORTNIGHTLY ? 13 : -1;
 
-    let nextLineItemStartDate = leaseStartDate;
-    let nextLineItemEndDate = addDays(nextLineItemStartDate, frequencyInDays);
-    let line_item = [];
+    let nextStartDate = leaseStartDate;
+    let nextEndDate = frequency === MONTHLY ? addMonthMinusOneDate(nextStartDate) : addDays(nextStartDate, frequencyInDays);
+    let lineItem = [];
 
-    while (leaseEndDate.getTime() > nextLineItemEndDate.getTime() ) {
-        line_item.push(nextLineItemStartDate.toDateString());
-        line_item.push(nextLineItemEndDate.toDateString());
-        line_item.push(weeklyRent * rentMulti);
+    while (leaseEndDate.getTime() > nextEndDate.getTime()) {
 
-        fullSeries.push(line_item);
-        line_item = [];
+        // if (frequency === MONTHLY && nextLineItemStartDate.getMonth() !== nextLineItemEndDate.getMonth()) {
+        //     //nextLineItemEndDate = new Date(nextLineItemEndDate.getFullYear(), nextLineItemEndDate.getMonth(), 0);
+        //     nextLineItemEndDate = addMonth(nextLineItemStartDate);
+        // }
 
-        nextLineItemStartDate = addDays(nextLineItemEndDate, 1);
-        nextLineItemEndDate = addDays(nextLineItemStartDate, frequencyInDays);
+        lineItem = [nextStartDate.toDateString(), nextEndDate.toDateString(), getNextAmount(weeklyRent, frequency), ];
+
+        fullSeries.push(lineItem);
+        lineItem = [];
+
+        nextStartDate = getNextStartDate(nextStartDate, frequency);
+        nextEndDate = getNextEndDate(nextStartDate, frequency);
+        // if (frequency === MONTHLY) {
+        //     nextStartDate = getNextStartDate(nextStartDate);
+        //     nextEndDate = getNextEndDate(nextStartDate);
+        // } else {
+        //     nextStartDate = getNextStartDate(nextEndDate, 1);
+        //     nextEndDate = addDays(nextStartDate, frequencyInDays);
+        // }
     }
 
     //Handling the last line item which falls beyond the given frequency interval.
-    let dateDiff = dateDiffInDays(leaseEndDate.getTime(), nextLineItemStartDate.getTime());
-    line_item.push(nextLineItemStartDate.toDateString());
-    line_item.push(addDays(nextLineItemStartDate, dateDiff).toDateString());
-    line_item.push(rentPerNumberOfDays(weeklyRent, dateDiff));
+    let dateDiff = getDateDiffInDays(leaseEndDate.getTime(), nextStartDate.getTime());
 
-    fullSeries.push(line_item);
+    nextEndDate = addDays(nextStartDate, dateDiff);
+    lineItem.push(nextStartDate.toDateString());
+    lineItem.push(nextEndDate.toDateString());
+    lineItem.push(getRentPerNumberOfDays(weeklyRent, dateDiff));
 
+
+    fullSeries.push(lineItem);
     res.send([fullSeries]);
 
 })
 
-function rentPerNumberOfDays(weeklyRent, numberOfdays){
-    return ((weeklyRent/7) * numberOfdays).toFixed(2);
+function getNextStartDate(nextStartDate, frequency) {
+    let result = new Date(nextStartDate);
+
+    switch (frequency) {
+        case WEEKLY:
+            result = addDays(result, 7);
+            break;
+        case FORTNIGHTLY:
+            result = addDays(result, 14);
+        case MONTHLY:
+            result = addMonth(result);
+        default:
+    }
+    return result;
+
+}
+
+function getNextEndDate(nextStartDate, frequency) {
+    let result = new Date(nextStartDate);
+
+    switch (frequency) {
+        case WEEKLY:
+            result = addDays(result, 7);
+            break;
+        case FORTNIGHTLY:
+            result = addDays(result, 14);
+        case MONTHLY:
+            result = addMonth(result);
+        default:
+    }
+    result.setDate(result.getDate() - 1);
+    return result;
+}
+
+function getNextAmount(weeklyRent, frequency) {
+    let lineAmount;
+
+    switch (frequency) {
+        case WEEKLY:
+            lineAmount = weeklyRent;
+            break;
+        case FORTNIGHTLY:
+            lineAmount = weeklyRent * 2;
+        case MONTHLY:
+            lineAmount = (weeklyRent / 7) * (365 / 12);
+        default:
+    }
+    return lineAmount.toFixed(2);
+}
+
+function addMonth(date) {
+    let result = new Date(date);
+
+    result.setMonth(result.getMonth() + 1);
+
+    // if (result.getDate() != date.getDate()) {
+    //     result.setDate(0);
+    // }
+
+
+    return result;
+}
+
+function addMonthMinusOneDate(date) {
+    let result = new Date(date);
+
+    result.setMonth(result.getMonth() + 1);
+
+    result.setDate(result.getDate() - 1);
+
+    return result;
+}
+
+
+
+function getRentPerNumberOfDays(weeklyRent, numberOfdays) {
+    return ((weeklyRent / 7) * numberOfdays);
 }
 
 function addDays(date, days) {
@@ -55,22 +153,22 @@ function addDays(date, days) {
     return result;
 }
 
-function dateDiffInDays(date1, date2) {
+function getDateDiffInDays(date1, date2) {
     return Math.floor((date1 - date2) / MILI_SECONDS_PER_DAY);
 }
 
 function validateQueryString(query) {
     const schema = Joi.object({
-        start_date:Joi.date().greater('now').required(),                //assuming start_date cannot be in the past    //check whether dates are UTC   //Test for Feb
-        end_date:Joi.date().greater(Joi.ref('start_date')).required(),
-        weekly_rent:Joi.number().integer().greater(0).required(),       //assuming the rent is a whole number
-        frequency: Joi.string().valid(WEEKLY,FORTNIGHTLY,MONTHLY).required(),
-        timezone: Joi.string()                                          //validation not done yet
+        start_date: Joi.date().greater('now').required(), //assuming start_date cannot be in the past    //check whether dates are UTC   //Test for Feb // check date are valid, eg: 31 Nov
+        end_date: Joi.date().greater(Joi.ref('start_date')).required(),
+        weekly_rent: Joi.number().integer().greater(0).required(), //assuming weekly_rent is a whole number
+        frequency: Joi.string().valid(WEEKLY, FORTNIGHTLY, MONTHLY).required(),
+        timezone: Joi.string() //validation not done yet
     })
 
     return schema.validate(query);
 }
-    
+
 
 
 
