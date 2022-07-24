@@ -6,7 +6,7 @@ export default function handleLedgerRequest(leaseStartDate, leaseEndDate, freque
 
 
     function generateLedger(leaseStartDate, leaseEndDate, frequency, weeklyRent, timezone) {
-        let fullSeries = [];
+        let ledger = [];
         let nextStartDate = leaseStartDate;
         let nextEndDate = getNextEndDate(nextStartDate, frequency);
         let lineItem = [];
@@ -14,7 +14,7 @@ export default function handleLedgerRequest(leaseStartDate, leaseEndDate, freque
         while (leaseEndDate.getTime() > nextEndDate.getTime()) {
             lineItem = [nextStartDate.toDateString(), nextEndDate.toDateString(), getNextAmount(weeklyRent, frequency), ];
 
-            fullSeries.push(lineItem);
+            ledger.push(lineItem);
             lineItem = [];
 
             nextStartDate = getNextStartDate(nextStartDate, frequency);
@@ -25,10 +25,10 @@ export default function handleLedgerRequest(leaseStartDate, leaseEndDate, freque
         let dateDiff = getDateDiffInDays(leaseEndDate.getTime(), nextStartDate.getTime());
         nextEndDate = addDays(nextStartDate, dateDiff);
 
-        lineItem = [nextStartDate.toDateString(), nextEndDate.toDateString(), getNextAmount(weeklyRent, DAILY, dateDiff + 1)]; //send freq = DAILY
-        fullSeries.push(lineItem);
+        lineItem = [nextStartDate.toDateString(), nextEndDate.toDateString(), getNextAmount(weeklyRent, DAILY, dateDiff + 1)]; //send freq = DAILY and using the same method to handle all scenarios. 
+        ledger.push(lineItem);
 
-        return fullSeries;
+        return ledger;
     }
 
     function getNextStartDate(nextStartDate, frequency) {
@@ -49,7 +49,8 @@ export default function handleLedgerRequest(leaseStartDate, leaseEndDate, freque
         return result;
 
     }
-
+    
+    //getNextStartDate and getNextEndDate can be one method with an additional parameter. 
     function getNextEndDate(nextStartDate, frequency) {
         let result = new Date(nextStartDate);
 

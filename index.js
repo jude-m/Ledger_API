@@ -8,7 +8,7 @@ const app = express();
 app.use(express.json());
 
 app.get('/api/ledger', (req, res) => {
-    const result = validateQueryString(req.query);
+    const result = validateQueryString(req.query);  //This should be called within the handler and return any error here. 
     if (result.error) return res.status(400).send(result.error)
 
     const leaseStartDate = new Date(req.query.start_date);
@@ -19,7 +19,7 @@ app.get('/api/ledger', (req, res) => {
         timezone
     } = req.query;
 
-    let fullSeries = handleLedgerRequest(leaseStartDate, leaseEndDate, frequency, weeklyRent, timezone);
+    let fullSeries = handleLedgerRequest(leaseStartDate, leaseEndDate, frequency, weeklyRent, timezone); // The return should be more generic with status codes, etc. 
     res.send([fullSeries]);
 })
 
