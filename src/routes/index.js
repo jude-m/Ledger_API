@@ -1,30 +1,14 @@
 "use strict";
 
 import express from 'express';
-import handleLedgerRequest from './ledger/ledger-handler.js';
-import validateQueryString from './ledger/ledger.js';
+import getLedger from '../controllers/ledger-controller.js'
 
-const app = express();
-app.use(express.json());
+const router = express.Router();
+export default router;
 
-app.get('/api/ledger', (req, res) => {
-    const result = validateQueryString(req.query);  //This should be called within the handler and return any error here. 
-    if (result.error) return res.status(400).send(result.error)
+router.get('/ledger', getLedger);
 
-    const leaseStartDate = new Date(req.query.start_date);
-    const leaseEndDate = new Date(req.query.end_date);
-    const {
-        frequency,
-        weekly_rent: weeklyRent,
-        timezone
-    } = req.query;
 
-    let fullSeries = handleLedgerRequest(leaseStartDate, leaseEndDate, frequency, weeklyRent, timezone); // The return should be more generic with status codes, etc. 
-    res.send([fullSeries]);
-})
-
-const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`listening on port ${port}`))
 
 
 
