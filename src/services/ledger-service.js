@@ -1,14 +1,15 @@
+"use strict";
 import { WEEKLY, FORTNIGHTLY, MONTHLY, DAILY, addMonth, addDays, getDateDiffInDays } from '../utils/date-utils.js'
 
 export default function generateLedger(leaseStartDate, leaseEndDate, frequency, weeklyRent, timezone) {
     let ledger = [];
     let lineItem = [];
-    let nextStartDate = leaseStartDate;
+    let nextStartDate = new Date(leaseStartDate);
     let nextEndDate = getNextEndDate(nextStartDate, frequency);
 
     while (leaseEndDate.getTime() > nextEndDate.getTime()) {
-        lineItem = [nextStartDate.toDateString(), nextEndDate.toDateString(), getNextAmount(weeklyRent, frequency), ];
-
+        lineItem = [nextStartDate.toCustomDateString(), nextEndDate.toCustomDateString(), getNextAmount(weeklyRent, frequency),];
+        
         ledger.push(lineItem);
         lineItem = [];
 
@@ -20,7 +21,7 @@ export default function generateLedger(leaseStartDate, leaseEndDate, frequency, 
     let dateDiff = getDateDiffInDays(leaseEndDate.getTime(), nextStartDate.getTime());
     nextEndDate = addDays(nextStartDate, dateDiff);
 
-    lineItem = [nextStartDate.toDateString(), nextEndDate.toDateString(), getNextAmount(weeklyRent, DAILY, dateDiff + 1)]; //send freq = DAILY and using the same method to handle all scenarios. 
+    lineItem = [nextStartDate.toCustomDateString(), nextEndDate.toCustomDateString(), getNextAmount(weeklyRent, DAILY, dateDiff + 1)]; //sending freq = DAILY and using the same method to handle all scenarios. 
     ledger.push(lineItem);
 
     return ledger;
