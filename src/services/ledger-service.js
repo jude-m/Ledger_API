@@ -82,5 +82,6 @@ function getNextAmount(weeklyRent, frequency, numberOfDays) {
             lineAmount = ((weeklyRent / 7) * numberOfDays);
             break;
     }
-    return lineAmount.toFixed(2);
+    
+    return lineAmount%1 === 0 ? lineAmount : lineAmount.toFixed(2);
 }
