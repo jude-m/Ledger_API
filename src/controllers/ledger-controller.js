@@ -7,13 +7,13 @@ import { FORTNIGHTLY, isValidTimeZone, MONTHLY, WEEKLY } from '../utils/date-uti
 
 export default function getLedger(req, res) {
     const result = validateQueryString(req.query);
-    if (result.error) return res.status(400).send(result.error)
+    if (result.error) return res.status(400).send(result.error);
 
     const leaseStartDate = new Date(req.query.start_date);
     const leaseEndDate = new Date(req.query.end_date);
     const { frequency, weekly_rent: weeklyRent, timezone } = req.query;
 
-    let ledger = generateLedger(leaseStartDate, leaseEndDate, frequency, weeklyRent, timezone); // The return should be more generic with status codes, etc. 
+    let ledger = generateLedger(leaseStartDate, leaseEndDate, frequency, weeklyRent, timezone); // The return can be more rich with status codes, etc. 
     res.status(200).send([ledger]);
 }
 
