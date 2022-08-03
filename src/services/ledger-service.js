@@ -23,7 +23,6 @@ export default function generateLedger(leaseStartDate, leaseEndDate, frequency, 
 
     lineItem = [nextStartDate.toCustomDateString(), nextEndDate.toCustomDateString(), getNextAmount(weeklyRent, DAILY, dateDiff + 1)]; //sending freq = DAILY and using the same method to handle all scenarios. 
     ledger.push(lineItem);
-
     return ledger;
 }
 
@@ -45,7 +44,7 @@ function getNextStartDate(nextStartDate, frequency) {
     return result;
 }
 
-//getNextStartDate and getNextEndDate can be one method with an additional parameter. 
+//getNextStartDate and getNextEndDate can be one method with an additional parameter or seperate the common logic. 
 function getNextEndDate(nextStartDate, frequency) {
     let result = new Date(nextStartDate);
 
@@ -83,5 +82,5 @@ function getNextAmount(weeklyRent, frequency, numberOfDays) {
             break;
     }
     
-    return lineAmount%1 === 0 ? lineAmount : lineAmount.toFixed(2);
+    return lineAmount%1 === 0 ? lineAmount : lineAmount.toFixed(2); //Not adding the decimal point when its a whole number.
 }

@@ -14,7 +14,9 @@ export default function getLedger(req, res) {
     const { frequency, weekly_rent: weeklyRent, timezone } = req.query;
 
     let ledger = generateLedger(leaseStartDate, leaseEndDate, frequency, weeklyRent, timezone); // The return can be more rich with status codes, etc. 
-    res.status(200).send([ledger]);
+
+    //TODO: Can remove the additional sqaure brackets.   
+    res.status(200).send([ledger]); 
 }
 
 function validateQueryString(query) {
