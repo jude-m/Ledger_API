@@ -1,5 +1,6 @@
 # Ledger_API
-Simple API that offers a Get endpoint to fetch the ledger. This is for training purposes.
+Simple API that offers a Get endpoint to fetch a sample ledger given the required parameters. 
+This is for training purposes.
 
 ## Getting Started
 
