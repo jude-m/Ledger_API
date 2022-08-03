@@ -13,8 +13,7 @@ This is for training purposes.
 * Run the command "node app.js"
 * The application will start listening on port 3000
 * Try out a sample Get request, using the web browser or a tool like Postman
-* Here is a sample request 
-* localhost:3000/api/ledger?start_date=2023-03-28&end_date=2023-05-27&weekly_rent=555&frequency=FORTNIGHTLY&timezone=America/Los_Angeles
+* Here is an example, localhost:3000/api/ledger?start_date=2023-03-28&end_date=2023-05-27&weekly_rent=555&frequency=FORTNIGHTLY&timezone=America/Los_Angeles
 
 ## Authors
 Jude Mahipalamudali (https://github.com/jude-m)
