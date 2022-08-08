@@ -2,10 +2,10 @@
 import joiBase from 'joi';
 import joiDate from '@joi/date';
 
-import generateLedger from "../services/ledger-service.js";
+import {generateLedger, createLedger} from "../services/ledger-service.js";
 import { FORTNIGHTLY, isValidTimeZone, MONTHLY, WEEKLY } from '../utils/date-utils.js';
 
-export default function getLedger(req, res) {
+export function getLedger(req, res) {
     const result = validateQueryString(req.query);
     if (result.error) return res.status(400).send(result.error);
 
@@ -15,8 +15,12 @@ export default function getLedger(req, res) {
 
     let ledger = generateLedger(leaseStartDate, leaseEndDate, frequency, weeklyRent, timezone); // The return can be more rich with status codes, etc. 
 
-    //TODO: Can remove the additional sqaure brackets.   
-    res.status(200).send([ledger]); 
+    res.status(200).send(ledger); 
+}
+
+export function postLedger(req,res) {
+    createLedger();
+    res.status(200).send("OK"); 
 }
 
 function validateQueryString(query) {
